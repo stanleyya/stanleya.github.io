@@ -784,6 +784,6 @@ Could not find a suitable set of interfaces for VIPs.
 
 网上说可以忽略，之后跑vipca即可
 ```
-
+![https://raw.githubusercontent.com/stanleyya/pic/master/1.png]()
 
 
