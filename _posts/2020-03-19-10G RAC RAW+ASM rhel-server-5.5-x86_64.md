@@ -784,7 +784,7 @@ Could not find a suitable set of interfaces for VIPs.
 
 网上说可以忽略，之后跑vipca即可
 ```
-![](https://raw.githubusercontent.com/stanleyya/pic/master/1.png)
+![**目录要和我们创建的一样**](https://raw.githubusercontent.com/stanleyya/pic/master/1.png)
 
 ![**目录要和我们创建的一样**](https://raw.githubusercontent.com/stanleyya/pic/master/%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_20200325095234.png)
 
