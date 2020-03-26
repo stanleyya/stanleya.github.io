@@ -789,3 +789,7 @@ Could not find a suitable set of interfaces for VIPs.
 ![](https://raw.githubusercontent.com/stanleyya/pic/master/%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_20200325095234.png)
 
 ![](https://raw.githubusercontent.com/stanleyya/pic/master/%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_20200325095249.png)
+
+**这里默认只显示一个节点，需要手工添加**
+
+![-w702](/img/15852149064657.jpg)
