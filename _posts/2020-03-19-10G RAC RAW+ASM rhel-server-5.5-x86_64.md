@@ -793,3 +793,244 @@ Could not find a suitable set of interfaces for VIPs.
 **这里默认只显示一个节点，需要手工添加**
 
 ![-w702](/img/15852149064657.jpg)
+
+**指定网卡类型，这里系统把所有可用的网卡都扫描进来，而我们实际需要用到的只有eth0跟eth1而已，手动屏蔽没用的网卡，注意还要将eth0改成public！**
+![-w627](/img/15853895918787.png)
+
+![-w628](/img/15853896108831.png)
+
+![-w631](/img/15853899958848.png)
+
+![-w616](/img/15853900189895.png)
+
+![-w606](/img/15853900350994.png)
+
+![-w617](/img/15853900554326.png)
+
+![-w641](/img/15853900727233.png)
+**以root用户跑脚本，俩节点都跑，跑完一个在跑下一个**
+```
+orainstROOT.sh
+
+Changing permissions of /u01/app/oracle/oraInventory to 770.
+
+Changing groupname of /u01/app/oracle/oraInventory to oinstall.
+
+The execution of the script is complete
+
+ 
+
+root.sh
+
+WARNING: directory '/u01' is not owned by root
+
+Checking to see if Oracle CRS stack is already configured
+
+/etc/oracle does not exist. Creating it now.
+
+ 
+
+Setting the permissions on OCR backup directory
+
+Setting up NS directories
+
+Oracle Cluster Registry configuration upgraded successfully
+
+WARNING: directory '/u01' is not owned by root
+
+Successfully accumulated necessary OCR keys.
+
+Using ports: CSS=49895 CRS=49896 EVMC=49898 and EVMR=49897.
+
+node :
+
+node 1: rh1 rh1-priv rh1
+
+node 2: rh2 rh2-priv rh2
+
+Creating OCR keys for user 'root', privgrp 'root'..
+
+Operation successful.
+
+Now formatting voting device: /dev/raw/raw3
+
+Now formatting voting device: /dev/raw/raw4
+
+Now formatting voting device: /dev/raw/raw5
+
+Format of 3 voting devices complete.
+
+Startup will be queued to init within 90 seconds.
+
+Adding daemons to inittab
+
+Expecting the CRS daemons to be up within 600 seconds.
+
+CSS is active on these nodes.
+
+rh1
+
+CSS is inactive on these nodes.
+
+rh2
+
+Local node checking complete.
+
+Run root.sh on remaining nodes to start CRS daemons.
+```
+`节点2跑root.sh报错了`
+
+>Running vipca(silent) for configuring nodeapps
+
+>/u01/crs_1/jdk/jre//bin/java: error while loading shared libraries: libpthread.so.0: cannot open shared object file: No such file or directory
+解决这个问题，需要三个步骤来完成：
+1、在每个节点上，修改$CRS_HOME/bin目录下的srvctl和vipca文件，在vipca文件ARGUMENTS=""行之前和srvctl文件的export LD_ASSUME_KERNEL行之后增加 unset LD_ASSUME_KERNEL 语句。
+
+>2、使用$CRS_HOME/bin目录下的oifcfg工具配置pub ip和pri ip.
+>3、在任意一个节点上，用root用户，手动运行vipca，配置完正确的prvip和vip 信息之后，crs就可以安装完成，操作过程如下：
+##1.1、修改vipca文件，增加标记为红色的那一行
+```
+[root@rh2 ~]# cd /u01/crs_1/
+[root@rh2 crs_1]# cd bin/
+[root@rh2 bin]# cp vipca vipca.bak
+[root@rh2 bin]# vi vipca
+#!/bin/sh
+#
+# $Header: vipca.sbs 10-dec-2004.15:30:55 khsingh Exp $
+#
+# vipca
+#
+# Copyright (c) 2001, 2004, Oracle. All rights reserved.
+#
+# NAME
+# vipca - Node Apps and VIPs Configuration Assistant
+#
+# DESCRIPTION
+# Oracle Cluster Node Applications Configuration Assistant is
+# used to configure the Node Applications and the virtual IPs.
+#
+# MODIFIED (MM/DD/YY)
+# khsingh 12/10/04 - fix LINUX workaround for bug 4054430
+# khsingh 11/22/04 - remove obsolete files
+# rxkumar 11/29/04 - fix bug4024708
+# khsingh 10/07/04 - add workaround for bug (3937317)
+# khsingh 09/27/04 - changes for PLE (3914991)
+# khsingh 09/13/04 - add orahome arg back
+# khsingh 08/16/04 - remove orahome arg
+# khsingh 12/07/03 - change oembase to oemlt
+# khsingh 10/31/03 - fix ice browser
+# khsingh 10/29/03 - add jewt var
+# khsingh 08/08/03 - fix ==
+# jtellez 06/10/03 - change to srvm_trace
+# rdasari 06/02/03 - set LD_LIBRARY_PATH appropriately for 32 and 64 bit solaris platforms
+# jtellez 11/15/02 - change SRVM_DEFS to SRVM_PROPERTY_DEFS
+# jtellez 11/04/02 - Add srvm_defs
+# jtellez 10/10/02 - fix srvmhas
+# jtellez 10/04/02 - srvmhas to jlib
+# jtellez 09/24/02 - add tracing
+# jtellez 09/09/02 - add versions to jars
+# rdasari 08/07/02 - use java instead of jre
+# jtellez 08/08/02 - enhance comment
+# jtellez 08/06/02 - add GUI jars
+# rdasari 08/01/02 - use jdk131
+# jtellez 07/26/02 - add srvmhas.jar to classpath
+# jtellez 07/29/02 - add gui jars
+# jtellez 07/24/02 - jtellez_vipca
+# jtellez 7/24/02 - creation
+#
+#!/bin/sh
+# Properties to pass directly to java
+if [ "X$SRVM_PROPERTY_DEFS" = "X" ]
+then
+SRVM_PROPERTY_DEFS=""
+fi
+# Check for tracing
+if [ "X$SRVM_TRACE" != "X" ]
+then
+SRVM_PROPERTY_DEFS="$SRVM_PROPERTY_DEFS -DTRACING.ENABLED=true -DTRACING.LEVEL=2"
+fi
+# External Directory Variables set by the Installer
+JREDIR=/u01/crs/oracle/product/10.2.0/crs/jdk/jre/
+ORACLE_HOME=/u01/crs/oracle/product/10.2.0/crs
+export ORACLE_HOME;
+/export
+EMBASE_FILE=oemlt-10_1_0.jar
+# GUI jars
+EWTJAR=$JLIBDIR/$EWT_FILE
+JEWTJAR=$JLIBDIR/$JEWT_FILE
+ICEJAR=$JLIBDIR/$ICE_BROWSER5_FILE
+EMBASEJAR=$JLIBDIR/$EMBASE_FILE
+SHAREJAR=$JLIBDIR/$SHARE_FILE
+HELPJAR=$JLIBDIR/$HELP_FILE
+GUIJARS=$EWTJAR:$JEWTJAR:$SHAREJAR:$EMBASEJAR:$HELPJAR:$ICEJAR
+# Set Classpath for Net Configuration Assistant
+CLASSPATH=$JREJAR:$JRECLASSES:$OPSMJAR:$SRVMHASJAR:$VIPCAJAR:$GUIJARS
+# Used for specifying any platforms specific Java options
+JRE_OPTIONS=""
+# Set the shared library path for JNI shared libraries
+# A few platforms use an environment variable other than LD_LIBRARY_PATH
+PLATFORM=`uname`
+case $PLATFORM in
+HP-UX) SHLIB_PATH=$ORACLE_HOME/lib32:$ORACLE_HOME/srvm/lib32:$SHLIB_PATH
+export SHLIB_PATH
+;;
+AIX) LIBPATH=$ORACLE_HOME/lib32:$ORACLE_HOME/srvm/lib32:$LIBPATH
+export LIBPATH
+;;
+Linux) LD_LIBRARY_PATH=$ORACLE_HOME/lib:$ORACLE_HOME/srvm/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH
+#Remove this workaround when the bug 3937317 is fixed
+arch=`uname -m`
+if [ "$arch" = "i686" -o "$arch" = "ia64" ]
+121 LD_ASSUME_KERNEL=2.4.19
+122 export LD_ASSUME_KERNEL
+123 fi
+124 #End workaround
+125 ;;
+126 SunOS) MACH_HARDWARE=`/bin/uname -i`
+127 case $MACH_HARDWARE in
+128 i86pc)
+129 LD_LIBRARY_PATH=$ORACLE_HOME/lib:ORACLE_HOME/srvm/lib:$LD_LIBRARY_PATH
+130 export LD_LIBRARY_PATH
+131 ;;
+132 *)
+133 LD_LIBRARY_PATH_64=$ORACLE_HOME/lib:$ORACLE_HOME/srvm/lib:$LD_LIBRARY_PATH_64
+134 export LD_LIBRARY_PATH_64
+135 JRE_OPTIONS="-d64"
+136 ;;
+137 esac
+138 ;;
+139 OSF1) LD_LIBRARY_PATH=$ORACLE_HOME/lib:$ORACLE_HOME/srvm/lib:$LD_LIBRARY_PATH
+140 export LD_LIBRARY_PATH
+141 ;;
+142 
+143 Darwin) DYLD_LIBRARY_PATH=$ORACLE_HOME/lib:$ORACLE_HOME/srvm/lib:$DYLD_LIBRARY_PATH
+144 export DYLD_LIBRARY_PATH 
+145 ;; 
+146 *) if [ -d $ORACLE_HOME/lib32 ];
+147 then
+148 LD_LIBRARY_PATH=$ORACLE_HOME/lib32:$ORACLE_HOME/srvm/lib32:$LD_LIBRARY_PATH
+149 else
+150 LD_LIBRARY_PATH=$ORACLE_HOME/lib:$ORACLE_HOME/srvm/lib:$LD_LIBRARY_PATH
+151 fi
+152 export LD_LIBRARY_PATH
+153 ;;
+154 esac
+155 
+156 unset LD_ASSUME_KERNEL
+157 
+158 ARGUMENTS=""
+159 NUMBER_OF_ARGUMENTS=$#
+160 if [ $NUMBER_OF_ARGUMENTS -gt 0 ]; then
+161 ARGUMENTS=$*
+162 fi
+163 
+164 # Run Vipca
+165 exec $JRE $JRE_OPTIONS $SRVM_PROPERTY_DEFS -classpath $CLASSPATH oracle.ops.vipca.VipCA -orahome $ORACLE_HOME $ARGUME NTS
+"vipca" 167L, 5034C written
+```
+
+
+
+
+
