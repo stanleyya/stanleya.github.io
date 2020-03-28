@@ -888,7 +888,7 @@ Run root.sh on remaining nodes to start CRS daemons.
 
 >2、使用$CRS_HOME/bin目录下的oifcfg工具配置pub ip和pri ip.
 >3、在任意一个节点上，用root用户，手动运行vipca，配置完正确的prvip和vip 信息之后，crs就可以安装完成，操作过程如下：
-##1.1、修改vipca文件，增加标记为红色的那一行
+## 1.1、修改vipca文件，增加标记为红色的那一行
 ```
 [root@rh2 ~]# cd /u01/crs_1/
 [root@rh2 crs_1]# cd bin/
