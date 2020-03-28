@@ -1017,7 +1017,7 @@ if [ "$arch" = "i686" -o "$arch" = "ia64" ]
 153 ;;
 154 esac
 155 
-156 unset LD_ASSUME_KERNEL
+156 unset LD_ASSUME_KERNEL. <---#这行
 157 
 158 ARGUMENTS=""
 159 NUMBER_OF_ARGUMENTS=$#
@@ -1029,8 +1029,130 @@ if [ "$arch" = "i686" -o "$arch" = "ia64" ]
 165 exec $JRE $JRE_OPTIONS $SRVM_PROPERTY_DEFS -classpath $CLASSPATH oracle.ops.vipca.VipCA -orahome $ORACLE_HOME $ARGUME NTS
 "vipca" 167L, 5034C written
 ```
+## 1.2、修改srvctl文件，增加标记为红色的那一行
+```
+[root@rh2 bin]# cp srvctl srvctl.bak
+[root@rh2 bin]# vi srvctl 
+#!/bin/sh
+#
+# $Header: srvctl.sbs 29-nov-2004.11:56:24 rxkumar Exp $
+#
+# srvctl
+#
+# Copyright (c) 2000, 2004, Oracle. All rights reserved.
+#
+# NAME
+# srvctl - Oracle Server Control Utility
+#
+# DESCRIPTION
+# Oracle Server Control Utility can be used to administer a RAC database,
+# i.e., to modify the configuration information of a RAC
+# database server as well as to do start/stop/status operations on the
+# instances of the server.
+#
+# MODIFIED (MM/DD/YY)
+# rxkumar 11/29/04 - fix bug4024708
+# dliu 11/18/04 - replace OH
+# khsingh 10/07/04 - add workaround for bug (3937317)
+# khsingh 09/27/04 - update case statement (3914991)
+# gdyoung 09/17/04 - ;;
+# gdyoung 08/20/04 - ple/st script merging
+# dliu 08/04/04 - get them work on linux
+# dliu 11/20/03 - support for trace
+# dliu 11/12/03 - unset ORA_CRSDEBUG
+# bhamadan 09/18/03 - replacing s_jre131Location with s_jreLocation
+# khsingh 06/25/03 - remove policy file
+# rxkumar 06/03/03 - add srvmasm.jar
+# rdasari 06/02/03 - set LD_LIBRARY_PATH appropriately for 32 and 64 bit solaris platform
+# dliu 02/21/03 - add i18n.jar
+# dliu 11/13/02 - use ORA_CRS_UI_FMT to turn on output capture
+# dliu 10/17/02 - turn on output capture
+# jtellez 10/04/02 - make policy ==
+# surchatt 09/06/02 - puttint policy file location
+# rdasari 08/07/02 - use java instead of jre
+# rdasari 08/01/02 - use jdk131
+# jtellez 07/26/02 - add srvmhas.jar to classpath
+# rdasari 05/09/01 - changing the header information
+# rdasari 03/22/01 - changing to ops to srv.
+# dliu 03/02/01 - use "$@" for argument list. this iscritical for correct interpretation of arguments with spaces in them..
+# dliu 02/26/01 - fix bug #1656127: SHLIB_PATH change.
+# dliu 02/23/01 - replace $ORACLE_HOME in classpath with an install variable..
+# jcreight 11/08/00 - define OPSMJAR, not OPSJAR
+"srvctl" 171L, 5554C
+126 JRE_OPTIONS="-d64"
+127 ;;
+128 esac
+129 ;;
+130 OSF1) LD_LIBRARY_PATH=$ORACLE_HOME/lib:$ORACLE_HOME/srvm/lib:$LD_LIBRARY_PATH
+131 export LD_LIBRARY_PATH
+132 ;;
+133 Darwin)
+134 DYLD_LIBRARY_PATH=$ORACLE_HOME/lib:$ORACLE_HOME/srvm/lib:$DYLD_LIBRARY_PATH
+135 export DYLD_LIBRARY_PATH
+136 ;;
+137 *) if [ -d $ORACLE_HOME/lib32 ];
+138 then
+139 LD_LIBRARY_PATH=$ORACLE_HOME/lib32:$ORACLE_HOME/srvm/lib32:$LD_LIBRARY_PATH
+140 else
+141 LD_LIBRARY_PATH=$ORACLE_HOME/lib:$ORACLE_HOME/srvm/lib:$LD_LIBRARY_PATH
+142 fi
+143 export LD_LIBRARY_PATH
+144 ;;
+145 esac
+146 
+147 
+148 # turn off crs debug flag that would otherwise interfere with crs profile
+149 # modification
+150 ORA_CRSDEBUG=0
+151 export ORA_CRSDEBUG
+152 
+153 # environment variable to turn on trace: set SRVM_TRACE to turn it on.
+154 if [ "X$SRVM_TRACE" != "X" ]
+155 then
+156 TRACE="-DTRACING.ENABLED=true -DTRACING.LEVEL=2"
+157 else
+158 TRACE=
+159 fi
+160 
+161 if [ "X$SRVM_TRACE" != "X" ]
+162 then
+163 echo $JRE $JRE_OPTIONS -classpath $CLASSPATH $TRACE oracle.ops.opsctl.OPSCTLDriver "$@"
+164 fi
+165 
+166 #Remove this workaround when the bug 3937317 is fixed
+167 LD_ASSUME_KERNEL=2.4.19
+168 export LD_ASSUME_KERNEL
+169 unset LD_ASSUME_KERNEL. <---此项
+170 
+171 # Run ops control utility
+"srvctl" 173L, 5578C written
 
+**2、在任意一个节点上使用oifcfg配置public和vip网络**
+```
+[root@rh2 bin]# ./oifcfg setif -global eth0/192.168.6.0:public
 
+[root@rh2 bin]# ./oifcfg setif -global eth1/10.10.10.0:cluster_interconnect
 
+[root@rh2 bin]# ./oifcfg getif
+
+eth0  192.168.6.0  global  public
+
+eth1  10.10.10.0  global  cluster_interconnect #-- 注意这里最后一个是0. 代表一个网段。 在一个节点设置之后，其他节点也能看到。 
+[root@rh1 bin]# ./oifcfg getif
+eth0  192.168.6.0  global  public
+eth1  10.10.10.0  global  cluster_interconnect
+```
+**这时候没有必要再返回重新执行root.sh了，需要我们手工执行vipca命令来为两个节点添加一些必要的进程，至于在哪个节点上运行，这个就无所谓了，这里我是在RAC2上(root用户)执行vipca命令：**
+![-w616](/img/15854043629991.png)
+![-w613](/img/15854043797385.png)
+![-w627](/img/15854044135858.png)
+**在空白处填写各节点对应的vip名称以及IP地址（其实只要填写RAC1的vip名称，再点其他空白处，就自动获取出来了），点击“next”**
+![-w612](/img/15854044756575.png)
+![-w616](/img/15854044934785.png)
+![-w629](/img/15854045094765.png)
+
+**这个地方安装完之后就可以点击“ok”退出了。这里我们手工运行完vipca之后，如果成功，那么相当于RAC2的root.sh也顺利完成使命，下一步需要做的就是返回到RAC1节点，执行剩下的步骤，如下图所示：**
+![-w636](/img/15854045428037.png)
+点击OK
 
 
