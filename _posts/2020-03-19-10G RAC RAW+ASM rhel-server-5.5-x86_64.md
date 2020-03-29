@@ -1,3 +1,4 @@
+[toc]
 # 一.修改IP,hostname
 
 ```
@@ -1281,4 +1282,33 @@ Now product-specific root actions will be performed.
 <font face="微软雅黑" color="red" size="2">运行命令crs_stat -t，可以看到刚配置好的两个监听进程已经启动
 </font>
 ![-w400](/img/15854691588865.png)
+
+# 十二.创建ASM 实例
+`1. 运行DBCA 命令`
+![-w702](/img/15854722566045.png)
+`2.选择 configure Automatic Storage Management， 来创建ASM 实例`
+![-w704](/img/15854723250493.png)
+`3. 选择所有结点`
+![-w701](/img/15854723605138.png)
+`4. 输入密码。RAC 的spfile 必须放在共享目录下。  参数文件我们选择第一个initialization parameter。 也可以放在我们建的裸设备上。
+这里密码设为oracle`
+![-w705](/img/15854723919524.png)
+![-w704](/img/15854724046532.png)
+![-w700](/img/15854724174367.png)
+`5.ASM 实例创建完后，用Create New 来创建ASM 磁盘组。 我们用ASM_DATA1来创建一个DATA 组， ASM_DATA2 创建FLASH_RECOVERY_AREA组`
+![-w702](/img/15854724497370.png)
+Redundancy 一般选external 就是也就是不考虑冗余，假如选normal 则是mirror, 至少要一个FailGroup选High 就是triple mirror,3倍镜像，需要三个FailGroup 
+
+![-w649](/img/15854724742508.png)
+
+![-w644](/img/15854725102789.png)
+![-w705](/img/15854725231404.png)
+继续create
+![-w646](/img/15854725438844.png)
+![-w648](/img/15854725571619.png)
+
+`6. 创建完成后，能看到组的状态是Mount, ASM 组必须mount之后才能使用。`
+![-w700](/img/15854725830518.png)
+
+#十三.DBCA建库
 
