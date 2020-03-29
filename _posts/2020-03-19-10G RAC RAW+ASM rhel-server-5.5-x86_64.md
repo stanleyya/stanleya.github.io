@@ -1154,5 +1154,131 @@ eth1  10.10.10.0  global  cluster_interconnect
 **这个地方安装完之后就可以点击“ok”退出了。这里我们手工运行完vipca之后，如果成功，那么相当于RAC2的root.sh也顺利完成使命，下一步需要做的就是返回到RAC1节点，执行剩下的步骤，如下图所示：**
 ![-w636](/img/15854045428037.png)
 点击OK
+![-w625](/img/15854047522451.png)
+开始安装后的检验
+>这里有一个小插曲，在node1跑orainstRoot.sh由于疏忽使用了oracle用户，虽然之后又用root用跑了一次，但在最后第三项检测时还是失败了，这是由于/etc/oraInst.loc的权限不对，无法读取，更正后retry成功
+>[root@rh1 etc]# ls -l |grep -i ora
+drwxr-xr-x  3 root oinstall   4096 May 18 12:56 oracle
+-rwxr-x---  1 root root         63 May 18 12:56 oraInst.loc
+[root@rh1 etc]# chmod 644 /etc/oraInst.loc
+[root@rh1 etc]# ls -l |grep -i ora
+drwxr-xr-x  3 root oinstall   4096 May 18 12:56 oracle
+-rw-r--r--  1 root root         63 May 18 12:56 oraInst.loc
 
+最后修改一下root用户环境变量
+vi .bash_profile
+PATH里添加ORA_CRS_HOME/bin
+
+使用crs_stat -t 查看一下
+![-w408](/img/15854675345546.png)
+**至此clusterware安装结束**
+
+
+# 十.安装Oracle 10gR2 database
+## 1. 检查Oracle 的相关包。Oracle 10g 需要如下包
+```vb
+binutils-2.15.92.0.2-10.EL4
+
+compat-db-4.1.25-9
+
+control-center-2.8.0-12
+
+gcc-3.4.3-9.EL4
+
+gcc-c++-3.4.3-9.EL4
+
+glibc-2.3.4-2
+
+glibc-common-2.3.4-2
+
+gnome-libs-1.4.1.2.90-44.1
+
+libstdc++-3.4.3-9.EL4
+
+libstdc++-devel-3.4.3-9.EL4
+
+make-3.80-5
+
+pdksh-5.2.14-30
+
+sysstat-5.0.5-1
+
+xscreensaver-4.18-5.rhel4.2
+
+libaio-0.3.96
+
+To see which versions of these packages are installed on your system, run the following command:
+
+rpm -q binutils compat-db control-center gcc gcc-c++ glibc glibc-common gnome-libs libstdc++ libstdc++-devel make pdksh sysstat xscreensaver libaio openmotif21
+*建立yum软件仓库，通过yum来安装，yum install -y 包名*
+[root@rh1 u01]# cd /etc/yum.repos.d/
+
+[root@rh1 yum.repos.d]# ls
+
+rhel-debuginfo.repo
+
+[root@rh1 yum.repos.d]# cp rhel-debuginfo.repo yum.repo
+
+[root@rh1 yum.repos.d]# vi yum.repo
+
+[Base]
+
+name=Red Hat Enterprise Linux
+
+baseurl=file:///media/Server
+
+enabled=1
+
+gpgcheck=0
+
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+```
+![-w619](/img/15854685523668.png)
+![-w622](/img/15854685634049.png)
+![-w624](/img/15854685928303.png)
+<font face="微软雅黑" color="red" size="2">在“warning”和“not executed”的小方框里面打勾，点击“next”
+</font>
+![-w621](/img/15854686626925.png)
+![-w623](/img/15854687469795.png)
+
+<font face="微软雅黑" color="red" size="2">只装软件
+</font>
+![-w619](/img/15854687866752.png)
+![-w631](/img/15854687974818.png)
+![-w629](/img/15854688102260.png)
+
+<font face="微软雅黑" color="red" size="2">以root用户跑脚本，俩节点都跑，跑完一个在跑下一个
+</font>
+> [root@rh1 database]# /u01/app/oracle/product/10.2.0/db_1/root.sh
+Running Oracle10 root.sh script...
+The following environment variables are set as:
+    ORACLE_OWNER= oracle
+    ORACLE_HOME=  /u01/app/oracle/product/10.2.0/db_1
+Enter the full pathname of the local bin directory: [/usr/local/bin]:
+   Copying dbhome to /usr/local/bin ...
+   Copying oraenv to /usr/local/bin ...
+   Copying coraenv to /usr/local/bin ...
+Creating /etc/oratab file...
+Entries will be added to the /etc/oratab file as needed by
+Database Configuration Assistant when a database is created
+Finished running generic part of root.sh script.
+Now product-specific root actions will be performed.
+
+![-w632](/img/15854689401804.png)
+
+
+# 十一.配置监听
+数据库软件安装完成之后，接下来要做的是给两个节点配置listener，也就是监听。监听在ORACLE RAC中的地位非常重要，如果监听没有配置好，后期使用RAC方式建立实例就会出问题，下面在RAC1节点上以oracle身份登陆，运行netca，打开网络配置，来完成监听过程的全过程。
+通过oracle运行netca，打开网络配置界面，选择cluster配置方式，点击“next”
+![-w600](/img/15854690389800.png)
+![-w595](/img/15854690521534.png)
+![-w591](/img/15854690830773.png)
+![-w598](/img/15854690957877.png)
+![-w595](/img/15854691085713.png)
+![-w598](/img/15854691194824.png)
+![-w597](/img/15854691331081.png)
+
+<font face="微软雅黑" color="red" size="2">运行命令crs_stat -t，可以看到刚配置好的两个监听进程已经启动
+</font>
+![-w400](/img/15854691588865.png)
 
