@@ -1311,4 +1311,136 @@ Redundancy 一般选external 就是也就是不考虑冗余，假如选normal �
 ![-w700](/img/15854725830518.png)
 
 #十三.DBCA建库
+dbca
 
+![-w665](/img/15855545241141.png)
+![-w704](/img/15855546118048.png)
+![-w705](/img/15855546226221.png)
+![-w701](/img/15855546359360.png)
+![-w703](/img/15855546458505.png)
+![-w702](/img/15855546696365.png)
+![-w702](/img/15855546809776.png)
+`选择ASM 来存储， 分别选择我们刚创建的DATA 和RCY 组`
+![-w704](/img/15855547126476.png)
+![-w702](/img/15855547214733.png)
+![-w701](/img/15855547290874.png)
+![-w702](/img/15855547405670.png)
+![-w700](/img/15855547494255.png)
+![-w701](/img/15855547876073.png)
+![-w702](/img/15855548027692.png)
+`这里可以手工添加删除一些指定的表空间、控制文件、日志文件等，我选择系统默认，然后点击“next"`
+![-w703](/img/15855548386217.png)
+`改一下字符集`
+![-w703](/img/15855548649238.png)
+![-w707](/img/15855548786454.png)
+`剩下都next
+开始安装了`
+![-w702](/img/15855549078791.png)
+![-w702](/img/15855549173101.png)
+
+```vc
+安完了检查一下
+[root@rh1 database]# crs_stat -t
+
+Name           Type           Target    State     Host       
+
+------------------------------------------------------------
+
+ora.prod.db    application    ONLINE    ONLINE    rh1        
+
+ora....d1.inst application    ONLINE    ONLINE    rh1        
+
+ora....d2.inst application    ONLINE    ONLINE    rh2        
+
+ora....SM1.asm application    ONLINE    ONLINE    rh1        
+
+ora....H1.lsnr application    ONLINE    ONLINE    rh1        
+
+ora.rh1.gsd    application    ONLINE    ONLINE    rh1        
+
+ora.rh1.ons    application    ONLINE    ONLINE    rh1        
+
+ora.rh1.vip    application    ONLINE    ONLINE    rh1        
+
+ora....SM2.asm application    ONLINE    ONLINE    rh2        
+
+ora....H2.lsnr application    ONLINE    ONLINE    rh2        
+
+ora.rh2.gsd    application    ONLINE    ONLINE    rh2        
+
+ora.rh2.ons    application    ONLINE    ONLINE    rh2        
+
+ora.rh2.vip    application    ONLINE    ONLINE    rh2    
+
+ 
+
+[root@rh2 bin]# ./crs_stat -t
+
+Name           Type           Target    State     Host       
+
+------------------------------------------------------------
+
+ora.prod.db    application    ONLINE    ONLINE    rh1        
+
+ora....d1.inst application    ONLINE    ONLINE    rh1        
+
+ora....d2.inst application    ONLINE    ONLINE    rh2        
+
+ora....SM1.asm application    ONLINE    ONLINE    rh1        
+
+ora....H1.lsnr application    ONLINE    ONLINE    rh1        
+
+ora.rh1.gsd    application    ONLINE    ONLINE    rh1        
+
+ora.rh1.ons    application    ONLINE    ONLINE    rh1        
+
+ora.rh1.vip    application    ONLINE    ONLINE    rh1        
+
+ora....SM2.asm application    ONLINE    ONLINE    rh2        
+
+ora....H2.lsnr application    ONLINE    ONLINE    rh2        
+
+ora.rh2.gsd    application    ONLINE    ONLINE    rh2        
+
+ora.rh2.ons    application    ONLINE    ONLINE    rh2        
+
+ora.rh2.vip    application    ONLINE    ONLINE    rh2     
+
+ 
+
+ 
+
+[oracle@rh1 ~]$ sqlplus / as sysdba
+
+ 
+
+SQL*Plus: Release 10.2.0.1.0 - Production on Sun May 18 16:22:57 2014
+
+ 
+
+Copyright (c) 1982, 2005, Oracle.  All rights reserved.
+
+ 
+
+ 
+
+Connected to:
+
+Oracle Database 10g Enterprise Edition Release 10.2.0.1.0 - 64bit Production
+
+With the Partitioning, Real Application Clusters, OLAP and Data Mining options
+
+ 
+
+SQL> select status from gv$instance;
+
+ 
+
+STATUS
+
+------------
+
+OPEN
+
+OPEN
+```
